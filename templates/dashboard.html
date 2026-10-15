@@ -1,1 +1,171 @@
-{% extends 'base.html' %}{% block title %}Overview · OCEAN HR{% endblock %}{% block content %}<div class="eyebrow">Recruitment workspace</div><div class="row" style="align-items:flex-end"><div><h1 class="heading">Make candidate reviews more structured.</h1><div class="muted">Review job-related evidence, compare CV and job-description text with a transparent NLP baseline, explore OCEAN self-reflection, and prepare structured interviews.</div></div><a class="btn" href="/assess/">＋ New candidate assessment</a></div><div class="notice"><strong>Responsible-use note</strong><br>CVs are used here to identify job-related skills evidence—not to infer personality. OCEAN results are based on self-report responses and must not be used alone to accept or reject a candidate.</div><div class="grid"><div class="card"><div class="muted">Assessments saved</div><div class="metric">{{ recent|length }}</div><div class="small muted">Recent records shown below</div></div><div class="card"><div class="muted">Assessment framework</div><div class="metric">OCEAN</div><div class="small muted">Five dimensions · self-report</div></div><div class="card"><div class="muted">Interview support</div><div class="metric">5 areas</div><div class="small muted">Structured prompts and follow-ups</div></div></div><div class="card"><div class="row"><div><h2 style="margin:0">Recent candidate assessments</h2><div class="muted small">For authorised HR review only</div></div><a class="btn secondary" href="/assess/">Start assessment</a></div>{% if recent %}<table><thead><tr><th>Candidate</th><th>Job position</th><th>Date</th></tr></thead><tbody>{% for item in recent %}<tr><td>{{ item.candidate_name }}</td><td>{{ item.job_title }}</td><td>{{ item.created_at|date:'d M Y' }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="muted" style="padding:24px 0">No assessments yet. Create one to explore the workflow.</p>{% endif %}</div>{% endblock %}
+```html
+{% extends 'base.html' %}
+
+{% block title %}Overview | OCEAN HR{% endblock %}
+
+{% block content %}
+
+<!-- Dashboard heading -->
+<div class="eyebrow">Recruitment workspace</div>
+
+<div class="row" style="align-items: flex-end;">
+    <div>
+        <h1 class="heading">Make candidate reviews more structured.</h1>
+
+        <div class="muted">
+            Review job-related evidence, compare CVs with job descriptions,
+            explore OCEAN self-reflection results, and prepare structured interviews.
+        </div>
+    </div>
+
+    <a class="btn" href="/assess/">
+        + New candidate assessment
+    </a>
+</div>
+
+<!-- Responsible use notice -->
+<div class="notice">
+    <strong>Responsible-use note</strong>
+    <br>
+    CV analysis identifies job-related skills evidence and text similarities;
+    it does not reliably infer personality or prove competence.
+    OCEAN results are based on self-reported questionnaire responses.
+    Neither text similarity nor personality scores should be used alone
+    to accept or reject a candidate.
+</div>
+
+<!-- Recruitment analytics -->
+<div class="grid">
+
+    <div class="card">
+        <div class="muted">Total assessments</div>
+
+        <div class="metric">
+            {{ total_assessments }}
+        </div>
+
+        <div class="small muted">
+            All saved candidate assessments
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="muted">Job positions assessed</div>
+
+        <div class="metric">
+            {{ distinct_positions }}
+        </div>
+
+        <div class="small muted">
+            Distinct job titles in assessments
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="muted">Average skill coverage</div>
+
+        <div class="metric">
+            {% if average_skill_match != None %}
+                {{ average_skill_match }}%
+            {% else %}
+                —
+            {% endif %}
+        </div>
+
+        <div class="small muted">
+            Average keyword matches among assessments with listed skills
+        </div>
+    </div>
+
+</div>
+
+<!-- Monthly activity -->
+<div class="card">
+    <h2>Monthly assessment activity</h2>
+
+    <p class="muted small">
+        Number of candidate assessments recorded each month.
+    </p>
+
+    {% if monthly_activity %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Assessments</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in monthly_activity %}
+                    <tr>
+                        <td>{{ item.month|date:'F Y' }}</td>
+                        <td>{{ item.count }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">
+            No assessment activity to display yet.
+            Create an assessment to start building your analytics.
+        </p>
+    {% endif %}
+</div>
+
+<!-- Recent candidate assessments -->
+<div class="card">
+
+    <div class="row">
+        <div>
+            <h2 style="margin: 0;">Recent candidate assessments</h2>
+
+            <div class="muted small">
+                For authorised HR review only
+            </div>
+        </div>
+
+        <a class="btn secondary" href="/assess/">
+            Start assessment
+        </a>
+    </div>
+
+    {% if recent %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Job position</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in recent %}
+                    <tr>
+                        <td>
+    <a href="{% url 'assessment_detail' item.id %}">
+        {{ item.candidate_name }}
+    </a>
+</td>
+                        <td>
+    <a href="{% url 'assessment_detail' item.id %}">
+        {{ item.job_title }}
+    </a>
+</td>
+                        <td>{{ item.created_at|date:'d M Y' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted" style="padding: 24px 0;">
+            No assessments yet. Create your first candidate assessment
+            to explore the workflow.
+        </p>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+```

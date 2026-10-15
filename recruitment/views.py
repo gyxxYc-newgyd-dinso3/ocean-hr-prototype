@@ -1,7 +1,7 @@
 from pathlib import Path
 from pypdf import PdfReader
 from docx import Document
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from .models import CandidateAssessment
 from .ocean import DIMENSIONS, INTERVIEW_QUESTIONS
@@ -31,7 +31,47 @@ def match_skills(text, required_skills):
     return [{'skill': term, 'found': term.casefold() in lower_text} for term in terms]
 
 def dashboard(request):
-    return render(request, 'dashboard.html', {'recent': CandidateAssessment.objects.order_by('-created_at')[:8]})
+    from django.db.models import Count
+    from django.db.models.functions import TruncMonth
+
+    assessments = CandidateAssessment.objects.all()
+    total_assessments = assessments.count()
+    distinct_positions = (
+        assessments.values('job_title').distinct().count()
+    )
+
+    skill_percentages = []
+    for assessment in assessments.only('skill_matches').iterator():
+        matches = assessment.skill_matches or []
+        if matches:
+            found_count = sum(
+                1 for item in matches if item.get('found')
+            )
+            skill_percentages.append(
+                found_count / len(matches) * 100
+            )
+
+    average_skill_match = (
+        round(sum(skill_percentages) / len(skill_percentages), 1)
+        if skill_percentages else None
+    )
+
+    monthly_activity = list(
+        assessments.annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+
+    context = {
+        'recent': assessments.order_by('-created_at')[:8],
+        'total_assessments': total_assessments,
+        'distinct_positions': distinct_positions,
+        'average_skill_match': average_skill_match,
+        'monthly_activity': monthly_activity,
+    }
+
+    return render(request, 'dashboard.html', context)
 
 def assess_candidate(request):
     if request.method == 'POST':
@@ -65,3 +105,33 @@ def assess_candidate(request):
         except Exception as exc:
             messages.error(request, str(exc))
     return render(request, 'assess.html', {'dimensions': DIMENSIONS})
+
+def assessment_detail(request, assessment_id):
+    assessment = get_object_or_404(
+        CandidateAssessment,
+        pk=assessment_id
+    )
+
+    matches = assessment.skill_matches or []
+
+    required_skills = ", ".join(
+        item.get("skill", "")
+        for item in matches
+        if item.get("skill")
+    )
+
+    tailored_questions = generate_job_interview_questions(
+        required_skills,
+        matches
+    )
+
+    return render(request, "report.html", {
+        "assessment": assessment,
+        "questions": INTERVIEW_QUESTIONS,
+        "dimensions": DIMENSIONS,
+        "matched_count": sum(
+            1 for item in matches if item.get("found")
+        ),
+        "skill_count": len(matches),
+        "tailored_questions": tailored_questions,
+    })
